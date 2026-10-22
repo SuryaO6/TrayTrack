@@ -19,6 +19,7 @@ works locally and in production:
 """
 
 import os
+import ssl
 import pymysql
 import pymysql.cursors
 from datetime import datetime
@@ -35,10 +36,19 @@ DB_PORT = int(os.environ.get("DB_PORT", "3306"))
 DB_USER = os.environ.get("DB_USER", "root")
 DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
 DB_NAME = os.environ.get("DB_NAME", "mess_monitor")
+DB_SSL_CA = os.environ.get("DB_SSL_CA", "").strip()
+
+
+def _ssl_context():
+    if not DB_SSL_CA:
+        return None
+    context = ssl.create_default_context()
+    context.load_verify_locations(cadata=DB_SSL_CA)
+    return context
 
 
 def get_connection():
-    conn = pymysql.connect(
+    connection_options = dict(
         host=DB_HOST,
         port=DB_PORT,
         user=DB_USER,
@@ -47,6 +57,10 @@ def get_connection():
         cursorclass=pymysql.cursors.DictCursor,
         autocommit=False,
     )
+    ssl_context = _ssl_context()
+    if ssl_context:
+        connection_options["ssl"] = ssl_context
+    return pymysql.connect(**connection_options)
     return conn
 
 

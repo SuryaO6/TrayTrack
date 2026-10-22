@@ -15,6 +15,7 @@ DB_PORT=<Railway MySQL port>
 DB_USER=<Railway MySQL user>
 DB_PASSWORD=<Railway MySQL password>
 DB_NAME=mess_monitor
+DB_SSL_CA=<Aiven CA certificate PEM, if required>
 GOOGLE_CLIENT_ID=<Google OAuth client ID>
 FRONTEND_ORIGIN=https://<your-vercel-domain>
 MESS_ADMIN_PASSWORD=<strong unique password>
@@ -24,6 +25,8 @@ SMTP_APP_PASSWORD=
 ```
 
 Do not upload `.env` or place any production secrets in the repository.
+For Aiven, paste the provider's CA certificate PEM into `DB_SSL_CA` as a
+Render secret. The backend uses it to verify the encrypted MySQL connection.
 
 ## Requirements
 
