@@ -6,3 +6,5 @@ python-dotenv>=1.0
 google-auth>=2.29
 pydantic>=2.6
 python-multipart>=0.0.9
+
+requests>=2.3100
