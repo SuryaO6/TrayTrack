@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getColleges, getMessHalls, getCategories, submitComplaint } from "./api";
 
-export default function SubmitComplaint({ userEmail }) {
+export default function SubmitComplaint() {
   const [colleges, setColleges] = useState([]);
   const [messHalls, setMessHalls] = useState([]);
   const [categories, setCategories] = useState([]);

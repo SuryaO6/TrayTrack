@@ -30,7 +30,7 @@ export default function PublicDashboard() {
   useEffect(() => {
     if (!collegeId) return;
     getOpenAlerts(collegeId, messFilter || undefined).then(setAlerts);
-  }, [messFilter]);
+  }, [collegeId, messFilter]);
 
   return (
     <div className="content wide">

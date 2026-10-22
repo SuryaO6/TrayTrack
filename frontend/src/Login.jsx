@@ -8,7 +8,7 @@ export default function Login({ onLoggedIn }) {
       localStorage.setItem("user_email", info.email);
       localStorage.setItem("user_name", info.name || "");
       onLoggedIn(info.email);
-    } catch (err) {
+    } catch {
       alert("Sign-in failed. Please try again.");
     }
   }

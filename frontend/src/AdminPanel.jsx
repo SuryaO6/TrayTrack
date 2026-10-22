@@ -24,7 +24,6 @@ export default function AdminPanel() {
   const [importFile, setImportFile] = useState(null);
   const [importStatus, setImportStatus] = useState("");
   const [directoryState, setDirectoryState] = useState("");
-  const [directorySearch, setDirectorySearch] = useState("");
   const [directoryStates, setDirectoryStates] = useState([]);
   const [selectedDirectoryCollege, setSelectedDirectoryCollege] = useState("");
   const [directoryResults, setDirectoryResults] = useState([]);
@@ -125,7 +124,7 @@ export default function AdminPanel() {
     }
   }
 
-  function useDirectoryCollege(college) {
+  function applyDirectoryCollege(college) {
     setCollegeName(college.name);
     setCollegeDomain("");
     setMessHeadEmail("");
@@ -138,7 +137,7 @@ export default function AdminPanel() {
   function selectDirectoryCollege(sourceId) {
     setSelectedDirectoryCollege(sourceId);
     const college = directoryResults.find((item) => item.source_id === sourceId);
-    if (college) useDirectoryCollege(college);
+    if (college) applyDirectoryCollege(college);
   }
 
   async function handleSaveContacts(collegeId) {
