@@ -1,8 +1,8 @@
 """
 auth.py — email masking + admin gate + token-based admin sessions.
 
-IMPORTANT: change ADMIN_PASSWORD and ADMIN_TOKEN_SECRET before real
-deployment (via environment variables, not hardcoded).
+IMPORTANT: provide ADMIN_PASSWORD and ADMIN_TOKEN_SECRET before starting
+the application (via environment variables, not hardcoded).
 """
 
 import os
@@ -10,10 +10,15 @@ import hmac
 import hashlib
 import time
 import base64
+import binascii
 import json
 
-ADMIN_PASSWORD = os.environ.get("MESS_ADMIN_PASSWORD", "changeme123")
-TOKEN_SECRET = os.environ.get("ADMIN_TOKEN_SECRET", "dev-secret-change-me")
+ADMIN_PASSWORD = os.environ.get("MESS_ADMIN_PASSWORD")
+TOKEN_SECRET = os.environ.get("ADMIN_TOKEN_SECRET")
+if not ADMIN_PASSWORD or not TOKEN_SECRET:
+    raise RuntimeError("MESS_ADMIN_PASSWORD and ADMIN_TOKEN_SECRET must be configured.")
+if ADMIN_PASSWORD == "changeme123" or TOKEN_SECRET == "dev-secret-change-me":
+    raise RuntimeError("Development admin credentials are not allowed.")
 TOKEN_LIFETIME_SECONDS = 8 * 60 * 60  # 8 hours
 
 
@@ -64,6 +69,35 @@ def verify_admin_token(token: str) -> bool:
         return False
 
     return payload.get("role") == "admin" and payload.get("exp", 0) > time.time()
+
+
+def create_user_token(email: str) -> str:
+    payload = {
+        "role": "user",
+        "sub": email.strip().lower(),
+        "exp": int(time.time()) + TOKEN_LIFETIME_SECONDS,
+    }
+    payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+    signature = hmac.new(TOKEN_SECRET.encode(), payload_b64.encode(), hashlib.sha256).hexdigest()
+    return f"{payload_b64}.{signature}"
+
+
+def verify_user_token(token: str):
+    if not token or "." not in token:
+        return None
+    payload_b64, _, signature = token.partition(".")
+    expected_signature = hmac.new(TOKEN_SECRET.encode(), payload_b64.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(signature, expected_signature):
+        return None
+    padded = payload_b64 + "=" * (-len(payload_b64) % 4)
+    try:
+        payload = json.loads(base64.urlsafe_b64decode(padded))
+    except (ValueError, TypeError, json.JSONDecodeError, binascii.Error):
+        return None
+    email = payload.get("sub")
+    if payload.get("role") != "user" or payload.get("exp", 0) <= time.time() or not isinstance(email, str):
+        return None
+    return email
 
 
 # ---------- Login attempt rate limiting ----------

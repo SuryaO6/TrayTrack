@@ -539,9 +539,15 @@ def mark_alert_resolved_by_student(alert_id, student_email):
     cur = conn.cursor()
     notes = f"Marked resolved by reporting student ({student_email})"
     cur.execute(
-        "UPDATE alerts SET resolved = 1, resolved_at = %s, resolution_notes = %s WHERE id = %s",
-        (ts, notes, alert_id),
+        "UPDATE alerts a JOIN complaints c ON a.source = 'complaint_pattern' "
+        "AND a.source_id = c.id SET a.resolved = 1, a.resolved_at = %s, "
+        "a.resolution_notes = %s WHERE a.id = %s AND c.student_email = %s",
+        (ts, notes, alert_id, student_email.strip().lower()),
     )
+    if cur.rowcount != 1:
+        conn.rollback()
+        conn.close()
+        return False
     cur.execute("SELECT level FROM alerts WHERE id = %s", (alert_id,))
     row = cur.fetchone()
     cur.execute(
@@ -550,6 +556,7 @@ def mark_alert_resolved_by_student(alert_id, student_email):
     )
     conn.commit()
     conn.close()
+    return True
 
 
 def get_complaint_private(complaint_id):

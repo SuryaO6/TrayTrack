@@ -1,8 +1,8 @@
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 function authHeaders() {
-  const email = localStorage.getItem("user_email");
-  return email ? { "X-User-Email": email } : {};
+  const token = localStorage.getItem("user_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 function adminHeaders() {
@@ -17,7 +17,10 @@ export async function loginWithGoogle(credential) {
     body: JSON.stringify({ credential }),
   });
   if (!res.ok) throw new Error("Google sign-in failed");
-  return res.json();
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.detail || "Google sign-in failed");
+  localStorage.setItem("user_token", body.token);
+  return body;
 }
 
 export async function adminLogin(password) {

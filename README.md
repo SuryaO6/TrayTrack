@@ -124,8 +124,8 @@ this is free and doesn't require verification for basic email sign-in.
 
 ## Adding your real college(s)
 
-Go to **Admin Panel** (password set via `MESS_ADMIN_PASSWORD` env var,
-default `changeme123`) → **Manage colleges & mess halls** tab:
+Go to **Admin Panel** (password set via the required `MESS_ADMIN_PASSWORD`
+environment variable) → **Manage colleges & mess halls** tab:
 1. Add your college with its real student email domain.
 2. Add each mess hall under that college.
 3. Repeat for additional colleges whenever you're ready to expand.
@@ -135,9 +135,9 @@ separate registration step needed.
 
 ## Before real deployment
 
-- **Change the admin password and token secret** — set `MESS_ADMIN_PASSWORD`
-  and `ADMIN_TOKEN_SECRET` via environment variables to real, random values
-  instead of the defaults.
+- **Set the admin password and token secret** — `MESS_ADMIN_PASSWORD` and
+  `ADMIN_TOKEN_SECRET` are required environment variables and must be strong,
+  random, and unique to the deployment.
 - **Publish the Google OAuth consent screen** (see above) so real students
   (not just test users) can sign in.
 - **Host MySQL somewhere reachable from your deployed backend** — not just

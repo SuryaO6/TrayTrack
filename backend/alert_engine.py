@@ -63,6 +63,9 @@ def create_complaint_alert(college_id, mess_id, student_email, student_name, cat
     """
     if not db.is_authorized_email(college_id, student_email):
         return None, None, "unauthorized", None, None
+    mess_hall = db.get_mess_hall(mess_id)
+    if not mess_hall or mess_hall["college_id"] != college_id:
+        return None, None, "invalid_mess", None, None
 
     complaint_id = db.insert_complaint(
         college_id, mess_id, student_email, student_name, category, description, photo_path

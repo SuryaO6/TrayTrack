@@ -2,8 +2,9 @@
 
 Review date: 2026-10-22
 
-This review documents security findings identified in the current application
-code. No application behavior was changed as part of this report.
+This review documents security findings identified in the application code.
+The findings below were remediated in commit `SECURITY_FIX_COMMIT` after the
+initial report.
 
 ## Findings
 
@@ -71,3 +72,16 @@ code. No application behavior was changed as part of this report.
 2. Remove default administrative credentials and signing secrets.
 3. Add alert ownership enforcement.
 4. Validate the college-to-mess-hall relationship during complaint creation.
+
+## Remediation status
+
+All four findings have been addressed:
+
+- The backend now requires non-default admin credentials and a token secret at
+  startup.
+- Google login now issues a signed, expiring user token; protected user
+  endpoints derive the email from that token.
+- Student alert resolution is restricted to the student associated with the
+  complaint that triggered the alert.
+- Complaint submission rejects mess halls that do not belong to the selected
+  college.

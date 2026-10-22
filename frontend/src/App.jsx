@@ -20,12 +20,15 @@ const TABS = [
 ];
 
 function AppShell() {
-  const [userEmail, setUserEmail] = useState(localStorage.getItem("user_email"));
+  const [userEmail, setUserEmail] = useState(
+    localStorage.getItem("user_token") ? localStorage.getItem("user_email") : null
+  );
   const [tab, setTab] = useState("dashboard");
 
   function handleLogout() {
     localStorage.removeItem("user_email");
     localStorage.removeItem("user_name");
+    localStorage.removeItem("user_token");
     setUserEmail(null);
   }
 

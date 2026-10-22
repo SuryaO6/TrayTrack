@@ -29,12 +29,12 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from dotenv import load_dotenv
 
+load_dotenv()
+
 import database as db
 import alert_engine
 import fssai_rules as rules
 import auth
-
-load_dotenv()
 
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")
@@ -82,10 +82,12 @@ def require_admin(authorization: Optional[str] = Header(None)):
     return True
 
 
-def require_user(x_user_email: Optional[str] = Header(None)):
-    if not x_user_email:
+def require_user(authorization: Optional[str] = Header(None)):
+    token = authorization[len("Bearer "):] if authorization and authorization.startswith("Bearer ") else None
+    email = auth.verify_user_token(token) if token else None
+    if not email:
         raise HTTPException(status_code=401, detail="Not signed in")
-    return x_user_email
+    return email
 
 
 # ==================== AUTH ====================
@@ -106,7 +108,12 @@ def google_login(payload: GoogleLoginRequest):
     if not info.get("email_verified"):
         raise HTTPException(status_code=401, detail="Email not verified by Google")
 
-    return {"email": info["email"], "name": info.get("name", ""), "hd": info.get("hd", "")}
+    return {
+        "email": info["email"],
+        "name": info.get("name", ""),
+        "hd": info.get("hd", ""),
+        "token": auth.create_user_token(info["email"]),
+    }
 
 
 class AdminLoginRequest(BaseModel):
@@ -190,10 +197,9 @@ async def submit_complaint(
     category: str = Form(...),
     description: str = Form(""),
     photo: Optional[UploadFile] = File(None),
-    x_user_email: Optional[str] = Header(None),
+    authorization: Optional[str] = Header(None),
 ):
-    if not x_user_email:
-        raise HTTPException(status_code=401, detail="Not signed in")
+    x_user_email = require_user(authorization)
 
     photo_path = None
     if photo is not None:
@@ -217,6 +223,8 @@ async def submit_complaint(
 
     if reason == "unauthorized":
         raise HTTPException(status_code=403, detail="Your email doesn't match this college's registered domain.")
+    if reason == "invalid_mess":
+        raise HTTPException(status_code=400, detail="That mess hall does not belong to the selected college.")
 
     return {
         "alert_created": alert_id is not None,
@@ -232,8 +240,8 @@ async def submit_complaint(
 # ==================== MY REPORTS ====================
 
 @app.get("/my-complaints")
-def my_complaints(x_user_email: str = Header(None)):
-    require_user(x_user_email)
+def my_complaints(authorization: Optional[str] = Header(None)):
+    x_user_email = require_user(authorization)
     complaints = db.get_my_complaints(x_user_email)
     result = []
     for c in complaints:
@@ -247,8 +255,8 @@ class ResolveByStudentRequest(BaseModel):
 
 
 @app.post("/my-complaints/resolve")
-def resolve_my_alert(payload: ResolveByStudentRequest, x_user_email: str = Header(None)):
-    require_user(x_user_email)
+def resolve_my_alert(payload: ResolveByStudentRequest, authorization: Optional[str] = Header(None)):
+    x_user_email = require_user(authorization)
 
     alerts = db.get_alerts()
     alert = next((a for a in alerts if a["id"] == payload.alert_id), None)
@@ -263,7 +271,8 @@ def resolve_my_alert(payload: ResolveByStudentRequest, x_user_email: str = Heade
     if datetime.utcnow() - last_escalated < timedelta(days=2):
         raise HTTPException(status_code=400, detail="Too early — must be escalating for 2+ days first")
 
-    db.mark_alert_resolved_by_student(payload.alert_id, x_user_email)
+    if not db.mark_alert_resolved_by_student(payload.alert_id, x_user_email):
+        raise HTTPException(status_code=403, detail="You may only resolve alerts linked to your own complaint.")
     return {"ok": True}
 
 
