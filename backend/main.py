@@ -1,7 +1,7 @@
 """
 main.py — TrayTrack API (FastAPI)
 
-Covers every screen that used to live in the Streamlit app:
+Covers every screen:
   - Google Sign-In                (student identity)
   - Submit Complaint (+ photo)    (public-facing, requires sign-in)
   - My Reports                   (student's own history + resolve button)
@@ -18,7 +18,7 @@ import time
 import csv
 import io
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 
 from fastapi import FastAPI, HTTPException, Header, UploadFile, File, Form, Request
@@ -37,24 +37,31 @@ import fssai_rules as rules
 import auth
 
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
-FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")
 
 UPLOAD_DIR = Path(__file__).parent / "uploads" / "complaints"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="TrayTrack API")
 
+# Wildcard CORS middleware allows all incoming frontend domains and localhost ports
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR.parent)), name="uploads")
+# Correctly mount static directory for photo uploads
+app.mount("/uploads/complaints", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 db.init_db()
+
+
+@app.get("/")
+def root_health_check():
+    """Root health check to prevent 404 logs from Render automated pings."""
+    return {"status": "ok", "service": "TrayTrack API is live"}
 
 
 def _escalation_loop():
@@ -98,6 +105,12 @@ class GoogleLoginRequest(BaseModel):
 
 @app.post("/auth/google")
 def google_login(payload: GoogleLoginRequest):
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=500, 
+            detail="GOOGLE_CLIENT_ID environment variable is missing on server."
+        )
+
     try:
         info = id_token.verify_oauth2_token(
             payload.credential, google_requests.Request(), GOOGLE_CLIENT_ID
@@ -144,7 +157,7 @@ def admin_login(payload: AdminLoginRequest, request: Request):
     return {"token": auth.create_admin_token()}
 
 
-# ==================== COLLEGES / MESS HALLS (public reference data) ====================
+# ==================== COLLEGES / MESS HALLS ====================
 
 @app.get("/colleges")
 def list_colleges():
@@ -268,7 +281,9 @@ def resolve_my_alert(payload: ResolveByStudentRequest, authorization: Optional[s
     last_escalated = alert["last_escalated_at"]
     if isinstance(last_escalated, str):
         last_escalated = datetime.strptime(last_escalated, "%Y-%m-%d %H:%M:%S")
-    if datetime.utcnow() - last_escalated < timedelta(days=2):
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    if now - last_escalated < timedelta(days=2):
         raise HTTPException(status_code=400, detail="Too early — must be escalating for 2+ days first")
 
     if not db.mark_alert_resolved_by_student(payload.alert_id, x_user_email):
@@ -305,10 +320,7 @@ def open_alerts(college_id: Optional[int] = None, mess_id: Optional[int] = None)
 
 @app.get("/analytics")
 def analytics(college_id: int):
-    """Auto-updating chart data + the raw complaint descriptions behind
-    each period, so the dashboard always reflects live data with no
-    manual curation needed."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     week_start = (now - timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
     month_start = (now - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
 
