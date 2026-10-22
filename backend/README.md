@@ -3,6 +3,28 @@
 This folder contains the TrayTrack FastAPI backend. It uses MySQL for storage
 and runs locally on `http://localhost:8000`.
 
+## Railway deployment
+
+Create a Railway service from this repository and set its root directory to
+`backend`. Railway will use the included `Procfile` to start FastAPI.
+Configure these variables in Railway's service settings:
+
+```dotenv
+DB_HOST=<Railway MySQL host>
+DB_PORT=<Railway MySQL port>
+DB_USER=<Railway MySQL user>
+DB_PASSWORD=<Railway MySQL password>
+DB_NAME=mess_monitor
+GOOGLE_CLIENT_ID=<Google OAuth client ID>
+FRONTEND_ORIGIN=https://<your-vercel-domain>
+MESS_ADMIN_PASSWORD=<strong unique password>
+ADMIN_TOKEN_SECRET=<strong unique secret>
+SMTP_EMAIL=
+SMTP_APP_PASSWORD=
+```
+
+Do not upload `.env` or place any production secrets in the repository.
+
 ## Requirements
 
 - Python 3.10 or newer
