@@ -1,4 +1,13 @@
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
+// Robust API_BASE evaluation to avoid Vite environment caching issues
+const getApiBase = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl.trim() !== "") {
+    return envUrl.replace(/\/$/, "");
+  }
+  return "https://traytrack-1.onrender.com";
+};
+
+const API_BASE = getApiBase();
 
 function authHeaders() {
   const token = localStorage.getItem("user_token");
@@ -16,9 +25,12 @@ export async function loginWithGoogle(credential) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ credential }),
   });
-  if (!res.ok) throw new Error("Google sign-in failed");
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.detail || "Google sign-in failed");
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.detail || "Google sign-in failed");
+  }
+
   localStorage.setItem("user_token", body.token);
   return body;
 }
@@ -29,7 +41,7 @@ export async function adminLogin(password) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password }),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Incorrect password");
   sessionStorage.setItem("admin_token", body.token);
   return body;
@@ -65,7 +77,7 @@ export async function submitComplaint(fields, photoFile) {
     headers: authHeaders(),
     body: formData,
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Failed to submit complaint");
   return body;
 }
@@ -81,7 +93,7 @@ export async function resolveMyAlert(alertId) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ alert_id: alertId }),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Failed to resolve");
   return body;
 }
@@ -119,7 +131,7 @@ export async function submitInspection(data) {
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify(data),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Failed to submit inspection");
   return body;
 }
@@ -130,7 +142,7 @@ export async function adminAddCollege(data) {
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify(data),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Failed");
   return body;
 }
@@ -143,7 +155,7 @@ export async function adminImportColleges(file) {
     headers: adminHeaders(),
     body: form,
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Import failed");
   return body;
 }
@@ -156,7 +168,7 @@ export async function adminSearchCollegeDirectory({ state, search, limit = 50 })
   const res = await fetch(`${API_BASE}/admin/college-directory?${params}`, {
     headers: adminHeaders(),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Directory search failed");
   return body;
 }
@@ -165,7 +177,7 @@ export async function adminGetCollegeDirectoryStates() {
   const res = await fetch(`${API_BASE}/admin/college-directory/states`, {
     headers: adminHeaders(),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Could not load directory states");
   return body;
 }
@@ -176,7 +188,7 @@ export async function adminUpdateCollegeContacts(collegeId, data) {
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify(data),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Failed");
   return body;
 }
@@ -187,7 +199,7 @@ export async function adminAddMessHall(data) {
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify(data),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Failed");
   return body;
 }
@@ -197,7 +209,7 @@ export async function adminDeleteMessHall(messId) {
     method: "DELETE",
     headers: adminHeaders(),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Failed to delete");
   return body;
 }
@@ -207,7 +219,7 @@ export async function adminDeleteCollege(collegeId) {
     method: "DELETE",
     headers: adminHeaders(),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Failed to delete");
   return body;
 }
@@ -223,7 +235,7 @@ export async function adminResolveAlert(alertId, notes) {
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify({ notes }),
   });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.detail || "Failed");
   return body;
 }

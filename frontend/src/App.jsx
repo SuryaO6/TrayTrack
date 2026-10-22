@@ -8,7 +8,7 @@ import HistoryTrends from "./HistoryTrends";
 import InspectorEntry from "./InspectorEntry";
 import AdminPanel from "./AdminPanel";
 
-const GOOGLE_CLIENT_ID = "964017053673-hg64g75ro6kbgl1345dats7ca0pgeq3s.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "792887341773-el82aas0ddnbdf0us57ctq9v1i9ka1bt.apps.googleusercontent.com";
 
 const TABS = [
   { id: "dashboard", label: "📊 Dashboard" },
