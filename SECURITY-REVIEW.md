@@ -3,7 +3,7 @@
 Review date: 2026-10-22
 
 This review documents security findings identified in the application code.
-The findings below were remediated in commit `SECURITY_FIX_COMMIT` after the
+The findings below were remediated in commit `5ee6ce8` after the
 initial report.
 
 ## Findings
