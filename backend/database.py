@@ -61,7 +61,6 @@ def get_connection():
     if ssl_context:
         connection_options["ssl"] = ssl_context
     return pymysql.connect(**connection_options)
-    return conn
 
 
 def init_db():
